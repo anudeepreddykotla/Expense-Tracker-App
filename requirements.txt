@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+databases[postgresql]
+psycopg2-binary
+pydantic
+python-dotenv
+alembic
+pytest
+requests
+python-jose[cryptography]
