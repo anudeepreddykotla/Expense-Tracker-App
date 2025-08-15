@@ -4,6 +4,8 @@ from sqlalchemy import Column, UUID, VARCHAR, TIMESTAMP, TEXT, BOOLEAN, ForeignK
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 Base = declarative_base()
 
@@ -70,6 +72,11 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(username={self.username}, email={self.email})>"
+        
+    @classmethod
+    async def get(cls, db: AsyncSession, user_id: str):
+        result = await db.execute(select(cls).where(cls.user_id == user_id))
+        return result.scalar_one_or_none()
 
 class RefreshToken(Base):
     __tablename__ = 'refresh_tokens'
@@ -78,7 +85,8 @@ class RefreshToken(Base):
     token = Column(TEXT, nullable=False, comment="Refresh token string")
     expires_at = Column(TIMESTAMP(timezone=True), nullable=False, comment="Token expiry timestamp")
     revoked = Column(BOOLEAN, nullable=False, default=False, comment="Revocation status")
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc), comment="Creation time")
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), comment="Creation time")
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now(), comment="Last update time")
 
     user = relationship("User", backref="refresh_tokens")
 
@@ -88,7 +96,8 @@ class FCMToken(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.user_id'), nullable=False, comment="Owner user ID")
     token = Column(TEXT, nullable=False, comment="Firebase Cloud Messaging token")
     device_info = Column(VARCHAR(255), nullable=True, comment="Optional device description")
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc), comment="Creation time")
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), comment="Creation time")
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now(), comment="Last update time")
 
     user = relationship("User", backref="fcm_tokens")
 
@@ -99,8 +108,8 @@ class BankAccount(Base):
     bank_name = Column(VARCHAR(100), nullable=False, comment="Bank name (e.g., SBI)")
     account_mask = Column(VARCHAR(20), nullable=False, comment="Masked account number (e.g., XXXX1234)")
     last_sync = Column(TIMESTAMP(timezone=True), nullable=True, comment="Last synchronization time date")
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc), comment="Linked Creation time")
-    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), comment="Last update time")
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), comment="Linked Creation time")
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now(), comment="Last update time")
 
     user = relationship("User", backref="bank_accounts")
 
@@ -111,6 +120,6 @@ class OTPVerification(Base):
     otp_code = Column(VARCHAR(6), nullable=False, comment="One-time password code")
     expires_at = Column(TIMESTAMP(timezone=True), nullable=False, comment="OTP expiry timestamp")
     verified = Column(BOOLEAN, nullable=False, default=False, comment="Verification status")
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc), comment="Creation time")
-
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), comment="Creation time")
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now(), comment="Last update time")
     user = relationship("User", backref="otp_verifications")
